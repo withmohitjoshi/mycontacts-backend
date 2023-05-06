@@ -6,7 +6,7 @@ const Contact = require("../models/contactModel");
 @access public
 */
 const getContacts = asyncHandler(async (req, res) => {
-  const contacts = await Contact.find();
+  const contacts = await Contact.find({ user_id: req.user.id });
   res.status(200).json(contacts);
 });
 
@@ -21,7 +21,12 @@ const createContact = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("All fields are mandotatry BAD_REQUEST");
   }
-  const contact = await Contact.create({ name, email, phone });
+  const contact = await Contact.create({
+    name,
+    email,
+    phone,
+    user_id: req.user.id,
+  });
   res.status(201).json(contact);
 });
 
@@ -37,6 +42,10 @@ const getContactById = asyncHandler(async (req, res) => {
       throw new Error("Contact not found");
     }
   });
+  if (contact.user_id.toString() !== req.user.id) {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
   res.status(200).json(contact);
 });
 
@@ -52,6 +61,12 @@ const updateContactById = asyncHandler(async (req, res) => {
       throw new Error("Contact not found");
     }
   });
+
+  if (contact.user_id.toString() !== req.user.id) {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
   const { name, email, phone } = req.body;
   if (!name || !email || !phone) {
     res.status(400);
@@ -77,6 +92,10 @@ const deleteContactById = asyncHandler(async (req, res) => {
       throw new Error("Contact not found");
     }
   });
+  if (contact.user_id.toString() !== req.user.id) {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
   const deletedContact = await Contact.findByIdAndDelete(req.params.id);
   res.status(200).json(deletedContact);
 });
